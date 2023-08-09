@@ -8,30 +8,33 @@
 #define Log(text) std::wcout << text << L"\n"
 #define Error(text) std::wcerr << L"ERROR | " << text << L"\n"
 
-bool delete_file(const std::wstring& full_path, bool display_logs = false)
+using Path = std::filesystem::path;
+using String = std::wstring;
+
+bool delete_file(const String& full_path, bool show_log = false)
 {
-   static std::error_code error_info;
-   std::filesystem::path file_path(full_path);
-   if (bool not_removed = !std::filesystem::remove(file_path, error_info))
+   static std::error_code err;
+   Path file_path(full_path);
+   if (bool not_removed = !std::filesystem::remove(file_path, err))
    {
-      if (display_logs)
+      if (show_log)
       {
-         std::string message_str = error_info.message();
-         std::wstring message_wstr(message_str.begin(), message_str.end());
-         Error(message_wstr << L" | " << full_path);
+         auto error_str = err.message();
+         String error_text(error_str.begin(), error_str.end());
+         Error(error_text << L" | " << full_path);
       }
       return false;
    }
-   if(display_logs) Log(L"Removed: " << full_path);
+   if(show_log) Log(L"Removed: " << full_path);
    return true;
 }
 
-size_t delete_all(const std::vector<std::wstring>& file_paths)
+size_t delete_all(const std::vector<String>& path_strings)
 {
    size_t count = 0;
-   for (const auto& file : file_paths)
+   for (const auto& file_full_path_string : path_strings)
    {
-      if (delete_file(file))
+      if (delete_file(file_full_path_string))
       {
          count++;
       }
@@ -39,9 +42,9 @@ size_t delete_all(const std::vector<std::wstring>& file_paths)
    return count;
 }
 
-bool get_tmp_dir(std::filesystem::path& directory_path)
+bool get_tmp_dir(Path& tmp_dir)
 {
-   wchar_t tmp_path[128];
+	wchar_t tmp_path[256] = { 0 };
    size_t len = 0;
    [[maybe_unused]] auto fuck = _wgetenv_s(&len, tmp_path, L"TMP");
    if (0 == len)
@@ -49,8 +52,8 @@ bool get_tmp_dir(std::filesystem::path& directory_path)
       Error(L"Cannot read TMP environment variable");
       return false;
    }
-   directory_path = tmp_path;
-   if (!std::filesystem::exists(directory_path) || !std::filesystem::is_directory(directory_path))
+   tmp_dir = tmp_path;
+   if (!std::filesystem::exists(tmp_dir) || !std::filesystem::is_directory(tmp_dir))
    {
       Error(L"Invalid TMP path");
       return false;
@@ -58,37 +61,37 @@ bool get_tmp_dir(std::filesystem::path& directory_path)
    return true;
 }
 
-size_t find_cl_files(std::vector<std::wstring>& file_paths, const std::filesystem::path& directory_path, bool display_logs = false)
+size_t find_cl_files(std::vector<String>& path_strings, const Path& tmp_dir, bool show_log = false)
 {
-   for (const auto& entry : std::filesystem::directory_iterator(directory_path))
+   for (const auto& entry : std::filesystem::directory_iterator(tmp_dir))
    {
       if (entry.is_regular_file() && entry.path().filename().string().starts_with("_CL_"))
       {
-         file_paths.push_back(entry.path().wstring());
+         path_strings.push_back(entry.path().wstring());
       }
    }
-   if (display_logs)
+   if (show_log)
    {
-      for (const auto& file_path : file_paths)
+      for (const auto& file_path : path_strings)
       {
          Log(file_path);
       }
    }
-   Log(L"Total files: " << file_paths.size());
-   return file_paths.size();
+   Log(L"Total files: " << path_strings.size());
+   return path_strings.size();
 }
 
 int main()
 {
    [[maybe_unused]] auto o_O = _setmode(_fileno(stdout), 0x20000);
 
-   std::filesystem::path directory_path;
-   if (!get_tmp_dir(directory_path))
+   Path tmp_dir;
+   if (!get_tmp_dir(tmp_dir))
       return 1;
 
-   std::vector<std::wstring> file_paths;
-   file_paths.reserve(4000);
-   if (!find_cl_files(file_paths, directory_path))
+   std::vector<String> path_strings;
+   path_strings.reserve(6000);
+   if (!find_cl_files(path_strings, tmp_dir))
    {
       Log(L"no CL files found, quitting...");
       return 2;
@@ -99,7 +102,7 @@ int main()
    std::cin >> decision;
    if (decision == 'y')
    {
-      auto count = delete_all(file_paths);
+      auto count = delete_all(path_strings);
       Log(count << L" files deleted.");
    }
    else
