@@ -18,7 +18,7 @@ auto Print(auto thing)
    static std::error_code err;
    if (std::filesystem::path pathFile(sFilePath); !std::filesystem::remove(pathFile, err))
    {
-      if (VERBOSE)
+      if constexpr (VERBOSE)
       {
          auto str = err.message();
          std::wstring sError(str.begin(), str.end());
@@ -26,7 +26,7 @@ auto Print(auto thing)
       }
       return false;
    }
-   if (VERBOSE)
+   if constexpr (VERBOSE)
       Print(std::format(L"Removed: {}", sFilePath));
    return true;
 }
@@ -74,7 +74,7 @@ size_t FildTmpFiles(std::vector<std::wstring>& vTmpFilePaths, const std::filesys
          vTmpFilePaths.push_back(entryTmpFile.path().wstring());
       }
    }
-   if (VERBOSE)
+   if constexpr (VERBOSE)
    {
       for (const auto& sTmpFilePath : vTmpFilePaths)
       {
