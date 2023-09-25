@@ -63,10 +63,12 @@ bool get_tmp_dir(Path& tmp_dir)
 
 size_t find_cl_files(std::vector<String>& path_strings, const Path& tmp_dir, bool show_log = false)
 {
+   uint64_t total_size{};
    for (const auto& entry : std::filesystem::directory_iterator(tmp_dir))
    {
       if (entry.is_regular_file() && entry.path().filename().string().starts_with("_CL_"))
       {
+         total_size += entry.file_size();
          path_strings.push_back(entry.path().wstring());
       }
    }
@@ -77,6 +79,7 @@ size_t find_cl_files(std::vector<String>& path_strings, const Path& tmp_dir, boo
          Log(file_path);
       }
    }
+   Log(L"Total size: " << std::setprecision(4) << (total_size / 1024.0) / 1024.0 << L" Mb");
    Log(L"Total files: " << path_strings.size());
    return path_strings.size();
 }
