@@ -4,6 +4,7 @@
 #include <array>
 #include <filesystem>
 #include <format>
+#include <string_view>
 #include <io.h>
 
 static constexpr bool VERBOSE{ false };
@@ -13,7 +14,7 @@ auto Print(auto thing)
    std::wcout << thing << L"\n";
 }
 
-[[nodiscard]] bool DeleteFile(const std::wstring& sFilePath)
+[[nodiscard]] bool DeleteFile(std::wstring_view sFilePath)
 {
    static std::error_code err;
    if (std::filesystem::path pathFile(sFilePath); !std::filesystem::remove(pathFile, err))
