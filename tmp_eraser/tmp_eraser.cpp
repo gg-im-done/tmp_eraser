@@ -56,6 +56,7 @@ bool GetPathTmpSysDir(std::filesystem::path& pathTmpSysDir)
       return false;
    }
    pathTmpSysDir = std::wstring(sTmpSysDir.data());
+   Print(sTmpSysDir.data());
    if (!std::filesystem::exists(pathTmpSysDir) || !std::filesystem::is_directory(pathTmpSysDir))
    {
       Print(L"[ERROR] Invalid TMP path");
