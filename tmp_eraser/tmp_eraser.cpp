@@ -22,13 +22,14 @@ auto Print(auto thing)
       if constexpr (VERBOSE)
       {
          auto str = err.message();
-         std::wstring sError(str.begin(), str.end());
-         Print(std::format(L"[ERROR] {} | {}", sError, sFilePath));
+         Print(std::format(L"[ERROR] {} | {}", std::wstring(str.begin(), str.end()), sFilePath));
       }
       return false;
    }
    if constexpr (VERBOSE)
+   {
       Print(std::format(L"Removed: {}", sFilePath));
+   }
    return true;
 }
 
@@ -47,9 +48,9 @@ size_t DeleteFiles(const std::vector<std::wstring>& vTmpFilePaths)
 
 bool GetPathTmpSysDir(std::filesystem::path& pathTmpSysDir)
 {
-   std::array<wchar_t, 256> sTmpSysDir;
-   size_t nTmpSysDirPathLength = 0;
-   [[maybe_unused]] auto errCode = _wgetenv_s(&nTmpSysDirPathLength, sTmpSysDir.data(), sTmpSysDir.size(), L"TMP");
+   std::array<wchar_t, 256> sTmpSysDir{};
+   size_t nTmpSysDirPathLength{};
+   [[maybe_unused]] const auto errCode = _wgetenv_s(&nTmpSysDirPathLength, sTmpSysDir.data(), sTmpSysDir.size(), L"TMP");
    if (0 == nTmpSysDirPathLength)
    {
       Print(L"[ERROR] Cannot read TMP environment variable");
@@ -83,33 +84,35 @@ size_t FildTmpFiles(std::vector<std::wstring>& vTmpFilePaths, const std::filesys
          Print(sTmpFilePath);
       }
    }
-   Print(std::format(L"Total size: {} MB | in {} files", std::to_wstring(nTotalJunkSize/1'048'576), std::to_wstring(vTmpFilePaths.size())));
+   Print(std::format(L"Total size: {} MB | in {} files", nTotalJunkSize/1'048'576, vTmpFilePaths.size()));
    return vTmpFilePaths.size();
 }
 
 int main()
 {
-   [[maybe_unused]] auto o_O = _setmode(_fileno(stdout), 0x20000);
+   [[maybe_unused]] const auto o_O = _setmode(_fileno(stdout), 0x20000);
 
    std::filesystem::path pathTmpSysDir;
    if (!GetPathTmpSysDir(pathTmpSysDir))
+   {
       return 1;
+   }
 
    std::vector<std::wstring> vTmpFilePaths;
-   vTmpFilePaths.reserve(6000);
+   vTmpFilePaths.reserve(6969);
    if (!FildTmpFiles(vTmpFilePaths, pathTmpSysDir))
    {
       Print(L"No CL files found, quitting...");
       return 2;
    }
-
-   std::wcout << L"Delete? (y): ";
+   
    char decision{};
+   std::wcout << L"Delete? (y): ";
    std::cin >> decision;
    if (decision == 'y')
    {
       auto nFilesDeleted = DeleteFiles(vTmpFilePaths);
-      Print(std::format(L"{} files deleted.", std::to_wstring(nFilesDeleted)));
+      Print(std::format(L"{} files deleted.", nFilesDeleted));
    }
    return 0;
 }
