@@ -9,9 +9,39 @@
 
 static constexpr bool VERBOSE{ false };
 
-auto Print(auto thing)
+void Print(auto thing)
 {
    std::wcout << thing << L"\n";
+}
+
+void PrintError(auto thing)
+{
+   std::wcout << L"[ERROR] " << thing << L"\n";
+}
+
+__forceinline auto EnableUnicodeOutput() noexcept
+{
+   [[maybe_unused]] const auto o_O = _setmode(_fileno(stdout), 0x20000);
+}
+
+bool GetPathTmpSysDir(std::filesystem::path& pathTmpSysDir)
+{
+   std::array<wchar_t, 256> sTmpSysDir{};
+   size_t nTmpSysDirPathLength{};
+   [[maybe_unused]] const auto errCode = _wgetenv_s(&nTmpSysDirPathLength, sTmpSysDir.data(), sTmpSysDir.size(), L"TMP");
+   if (0 == nTmpSysDirPathLength)
+   {
+      PrintError(L"Cannot read TMP environment variable");
+      return false;
+   }
+   pathTmpSysDir.assign(sTmpSysDir.data());
+   Print(sTmpSysDir.data());
+   if (!std::filesystem::exists(pathTmpSysDir) || !std::filesystem::is_directory(pathTmpSysDir))
+   {
+      PrintError(L"Invalid TMP path");
+      return false;
+   }
+   return true;
 }
 
 [[nodiscard]] bool DeleteFile(std::wstring_view sFilePath)
@@ -22,7 +52,7 @@ auto Print(auto thing)
       if constexpr (VERBOSE)
       {
          auto str = err.message();
-         Print(std::format(L"[ERROR] {} | {}", std::wstring(str.begin(), str.end()), sFilePath));
+         PrintError(std::format(L"{} | {}", std::wstring(str.begin(), str.end()), sFilePath));
       }
       return false;
    }
@@ -33,64 +63,61 @@ auto Print(auto thing)
    return true;
 }
 
-size_t DeleteFiles(const std::vector<std::wstring>& vTmpFilePaths)
-{
-   size_t nFilesDeleted = 0;
-   for (const auto& sFilePath : vTmpFilePaths)
+class JunkEraser
+{   
+   std::vector<std::wstring> vTmpFilePaths;
+public:
+   JunkEraser()
    {
-      if (DeleteFile(sFilePath))
+      vTmpFilePaths.reserve(6969);
+   }
+   explicit JunkEraser(const std::filesystem::path& directory) : JunkEraser()
+   {
+      if (!FindFiles(directory))
       {
-         nFilesDeleted++;
+         Print(std::format(L"No CL files found in {}", directory.wstring()));
       }
    }
-   return nFilesDeleted;
-}
 
-bool GetPathTmpSysDir(std::filesystem::path& pathTmpSysDir)
-{
-   std::array<wchar_t, 256> sTmpSysDir{};
-   size_t nTmpSysDirPathLength{};
-   [[maybe_unused]] const auto errCode = _wgetenv_s(&nTmpSysDirPathLength, sTmpSysDir.data(), sTmpSysDir.size(), L"TMP");
-   if (0 == nTmpSysDirPathLength)
+   bool FindFiles(const std::filesystem::path& directory)
    {
-      Print(L"[ERROR] Cannot read TMP environment variable");
-      return false;
+      uint64_t nTotalJunkSize{};
+      for (const auto& entryTmpFile : std::filesystem::directory_iterator(directory))
+      {
+         if (entryTmpFile.is_regular_file() && entryTmpFile.path().filename().string().starts_with("_CL_"))
+         {
+            nTotalJunkSize += entryTmpFile.file_size();
+            vTmpFilePaths.push_back(entryTmpFile.path().wstring());
+         }
+      }
+      if constexpr (VERBOSE)
+      {
+         for (const auto& sTmpFilePath : vTmpFilePaths)
+         {
+            Print(sTmpFilePath);
+         }
+      }
+      Print(std::format(L"Total size: {} MB | in {} files", nTotalJunkSize/1'048'576, vTmpFilePaths.size()));
+      return static_cast<bool>(vTmpFilePaths.size());
    }
-   pathTmpSysDir = std::wstring(sTmpSysDir.data());
-   Print(sTmpSysDir.data());
-   if (!std::filesystem::exists(pathTmpSysDir) || !std::filesystem::is_directory(pathTmpSysDir))
-   {
-      Print(L"[ERROR] Invalid TMP path");
-      return false;
-   }
-   return true;
-}
 
-size_t FildTmpFiles(std::vector<std::wstring>& vTmpFilePaths, const std::filesystem::path& pathDirectory)
-{
-   uint64_t nTotalJunkSize{};
-   for (const auto& entryTmpFile : std::filesystem::directory_iterator(pathDirectory))
+   auto DeleteFoundFiles()
    {
-      if (entryTmpFile.is_regular_file() && entryTmpFile.path().filename().string().starts_with("_CL_"))
+      size_t nFilesDeleted = 0;
+      for (const auto& sFilePath : vTmpFilePaths)
       {
-         nTotalJunkSize += entryTmpFile.file_size();
-         vTmpFilePaths.push_back(entryTmpFile.path().wstring());
+         if (DeleteFile(sFilePath))
+         {
+            nFilesDeleted++;
+         }
       }
+      return nFilesDeleted;
    }
-   if constexpr (VERBOSE)
-   {
-      for (const auto& sTmpFilePath : vTmpFilePaths)
-      {
-         Print(sTmpFilePath);
-      }
-   }
-   Print(std::format(L"Total size: {} MB | in {} files", nTotalJunkSize/1'048'576, vTmpFilePaths.size()));
-   return vTmpFilePaths.size();
-}
+};
 
 int main()
 {
-   [[maybe_unused]] const auto o_O = _setmode(_fileno(stdout), 0x20000);
+   EnableUnicodeOutput();
 
    std::filesystem::path pathTmpSysDir;
    if (!GetPathTmpSysDir(pathTmpSysDir))
@@ -98,20 +125,14 @@ int main()
       return 1;
    }
 
-   std::vector<std::wstring> vTmpFilePaths;
-   vTmpFilePaths.reserve(6969);
-   if (!FildTmpFiles(vTmpFilePaths, pathTmpSysDir))
-   {
-      Print(L"No CL files found, quitting...");
-      return 2;
-   }
-   
+   JunkEraser eraser(pathTmpSysDir);
+
    char decision{};
    std::wcout << L"Delete? (y): ";
    std::cin >> decision;
    if (decision == 'y')
    {
-      auto nFilesDeleted = DeleteFiles(vTmpFilePaths);
+      auto nFilesDeleted = eraser.DeleteFoundFiles();
       Print(std::format(L"{} files deleted.", nFilesDeleted));
    }
    return 0;
