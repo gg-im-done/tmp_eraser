@@ -65,11 +65,11 @@ bool GetPathTmpSysDir(std::filesystem::path& pathTmpSysDir)
 
 class JunkEraser
 {   
-   std::vector<std::wstring> vTmpFilePaths;
+   std::vector<std::wstring> m_files;
 public:
    JunkEraser()
    {
-      vTmpFilePaths.reserve(6969);
+      m_files.reserve(6969);
    }
    explicit JunkEraser(const std::filesystem::path& directory) : JunkEraser()
    {
@@ -87,24 +87,24 @@ public:
          if (entryTmpFile.is_regular_file() && entryTmpFile.path().filename().string().starts_with("_CL_"))
          {
             nTotalJunkSize += entryTmpFile.file_size();
-            vTmpFilePaths.push_back(entryTmpFile.path().wstring());
+            m_files.push_back(entryTmpFile.path().wstring());
          }
       }
       if constexpr (VERBOSE)
       {
-         for (const auto& sTmpFilePath : vTmpFilePaths)
+         for (const auto& sTmpFilePath : m_files)
          {
             Print(sTmpFilePath);
          }
       }
-      Print(std::format(L"Total size: {} MB | in {} files", nTotalJunkSize/1'048'576, vTmpFilePaths.size()));
-      return static_cast<bool>(vTmpFilePaths.size());
+      Print(std::format(L"Total size: {} MB | in {} files", nTotalJunkSize/1'048'576, m_files.size()));
+      return static_cast<bool>(m_files.size());
    }
 
    auto DeleteFoundFiles()
    {
       size_t nFilesDeleted = 0;
-      for (const auto& sFilePath : vTmpFilePaths)
+      for (const auto& sFilePath : m_files)
       {
          if (DeleteFile(sFilePath))
          {
@@ -127,10 +127,10 @@ int main()
 
    JunkEraser eraser(pathTmpSysDir);
 
-   char decision{};
+   char choice{};
    std::wcout << L"Delete? (y): ";
-   std::cin >> decision;
-   if (decision == 'y')
+   std::cin >> choice;
+   if (choice == 'y')
    {
       auto nFilesDeleted = eraser.DeleteFoundFiles();
       Print(std::format(L"{} files deleted.", nFilesDeleted));
