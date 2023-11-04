@@ -125,7 +125,11 @@ int main()
       return 1;
    }
 
-   JunkEraser eraser(pathTmpSysDir);
+   JunkEraser eraser;
+   if (!eraser.FindFiles(pathTmpSysDir))
+   {
+      return 0;
+   }
 
    char choice{};
    std::wcout << L"Delete? (y): ";

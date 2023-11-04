@@ -2,7 +2,7 @@
 x64
 tmp_eraser.vcxproj.filters
 tmp_eraser.vcxproj.user
-
+Build
 # Compiled Object files
 *.slo
 *.lo
