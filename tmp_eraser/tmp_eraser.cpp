@@ -33,16 +33,9 @@ void PrintError(auto thing)
 
 bool GetPathTmpSysDir(std::filesystem::path& pathTmpSysDir)
 {
-   std::array<wchar_t, 256> sTmpSysDir{};
-   size_t nTmpSysDirPathLength{};
-   [[maybe_unused]] const auto errCode = _wgetenv_s(&nTmpSysDirPathLength, sTmpSysDir.data(), sTmpSysDir.size(), L"TMP");
-   if (0 == nTmpSysDirPathLength)
-   {
-      PrintError(L"Cannot read TMP environment variable");
-      return false;
-   }
-   pathTmpSysDir.assign(sTmpSysDir.data());
-   Print(sTmpSysDir.data());
+   std::string sTmpEnvVar(std::getenv("TMP"));
+   pathTmpSysDir = sTmpEnvVar;
+   Print(sTmpEnvVar.c_str());
    if (!std::filesystem::exists(pathTmpSysDir) || !std::filesystem::is_directory(pathTmpSysDir))
    {
       PrintError(L"Invalid TMP path");
