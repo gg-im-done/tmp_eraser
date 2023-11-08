@@ -5,7 +5,19 @@
 #include <filesystem>
 #include <format>
 #include <string_view>
+
+#ifdef _WIN32
 #include <io.h>
+__forceinline auto EnableUnicodeOutput() noexcept
+{
+   [[maybe_unused]] const auto o_O = _setmode(_fileno(stdout), 0x20000);
+}
+#else
+void EnableUnicodeOutput() noexcept
+{
+   // Linux
+}
+#endif
 
 static constexpr bool VERBOSE{ false };
 
@@ -17,11 +29,6 @@ void Print(auto thing)
 void PrintError(auto thing)
 {
    std::wcout << L"[ERROR] " << thing << L"\n";
-}
-
-__forceinline auto EnableUnicodeOutput() noexcept
-{
-   [[maybe_unused]] const auto o_O = _setmode(_fileno(stdout), 0x20000);
 }
 
 bool GetPathTmpSysDir(std::filesystem::path& pathTmpSysDir)
