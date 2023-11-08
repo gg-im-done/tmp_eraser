@@ -8,3 +8,4 @@ Build
 *.lo
 *.o
 *.obj
+/out
