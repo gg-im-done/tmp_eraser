@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.24)
+cmake_minimum_required(VERSION 3.28)
 
 set(project_name "tmp_eraser")
 
@@ -6,7 +6,7 @@ project(${project_name} VERSION 1.69)
 
 add_executable(${project_name})
 
-set_target_properties(${project_name} PROPERTIES CXX_STANDARD 20)
+set_target_properties(${project_name} PROPERTIES CXX_STANDARD 23)
 
 target_sources(${project_name} PRIVATE tmp_eraser/tmp_eraser.cpp)
 
