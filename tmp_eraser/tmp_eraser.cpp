@@ -41,7 +41,7 @@ public:
          {
             return m_envVars[sName];
          }
-         std::print("ERROR | GetDirectory: '{}'");
+         std::print("ERROR | GetDirectory: '{}'", sName);
       }
       return std::filesystem::path();
    }
@@ -99,7 +99,7 @@ public:
          {
             std::print("{}\n", sTmpFilePath);
          }
-         std::print("--------------------------------\n");
+         std::print("--------------------------------------------------------------------------------\n");
       }
       std::print("Total size: {} MB | in {} files\n", nTotalJunkSize/1'048'576, m_files.size());
       return m_files.size();
