@@ -1,10 +1,10 @@
-#include <iostream>
-#include <string>
-#include <vector>
-#include <filesystem>
-#include <print>
-#include <string_view>
-#include <map>
+import <iostream>;
+import <string>;
+import <vector>;
+import <filesystem>;
+import <print>;
+import <string_view>;
+import <map>;
 
 static constexpr bool VERBOSE{ true };
 
