@@ -9,3 +9,5 @@ Build
 *.o
 *.obj
 /out
+.idea
+cmake-build-debug
